@@ -2,219 +2,140 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SNAP TAP | REFLEX</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REFLEX TEST | ORANGE</title>
     <style>
-        :root {
-            --primary: #ff2e63;
-            --bg: #0a0a0f;
-            --surface: #11121a;
-            --text: #ffffff;
-        }
-
         body {
             margin: 0;
-            background: var(--bg);
-            color: var(--text);
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #0d0905; /* Darker brown/black for orange contrast */
+            color: #ff9d00;
+            font-family: 'Courier New', Courier, monospace;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
             overflow: hidden;
-            touch-action: manipulation;
         }
-
-        /* Large Game Board */
-        #game-container {
-            position: relative;
+        #hud {
+            margin-bottom: 10px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px #ff6a00;
+        }
+        #game {
             width: 90vw;
             max-width: 600px;
             height: 70vh;
-            background: var(--surface);
-            border: 2px solid #222;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 0 40px rgba(0,0,0,0.5);
+            background: #1a140f; /* Warm dark surface */
+            border: 3px solid #ff6a00;
+            border-radius: 8px;
+            position: relative;
+            cursor: crosshair;
+            box-shadow: inset 0 0 20px #000, 0 0 15px rgba(255, 106, 0, 0.3);
         }
-
-        .stats {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 15px;
-            font-weight: bold;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            font-size: 14px;
-        }
-
-        .stats b { color: var(--primary); }
-
         .target {
-            position: absolute;
-            background: var(--primary);
+            background: linear-gradient(145deg, #ff9d00, #ff4500);
             border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 0 20px var(--primary);
-            transition: transform 0.1s ease-out;
-            animation: grow 0.2s ease-out;
-        }
-
-        @keyframes grow {
-            from { transform: scale(0); }
-            to { transform: scale(1); }
-        }
-
-        /* Game Over Menu */
-        #overlay {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(10, 10, 15, 0.9);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
+            box-shadow: 0 0 20px #ff6a00, 0 0 40px #ff4500;
+            border: 2px solid #fff;
         }
-
-        .hidden { display: none !important; }
-
-        h1 { font-size: 3rem; margin: 0; letter-spacing: 8px; }
-
         button {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            border-radius: 50px;
-            cursor: pointer;
             margin-top: 20px;
-            transition: 0.2s;
+            padding: 12px 40px;
+            background: #ff6a00;
+            color: black;
+            border: none;
+            cursor: pointer;
+            font-weight: 900;
+            font-size: 1.1rem;
             text-transform: uppercase;
+            border-radius: 4px;
+            box-shadow: 0 0 10px #ff6a00;
         }
-
-        button:hover { transform: scale(1.05); filter: brightness(1.2); }
-
-        /* Screen Shake Effect */
-        .shake { animation: shake 0.3s; }
-        @keyframes shake {
-            0% { transform: translate(1px, 1px); }
-            20% { transform: translate(-3px, 0px); }
-            40% { transform: translate(3px, 2px); }
-            60% { transform: translate(-3px, 1px); }
-            100% { transform: translate(0, 0); }
+        button:hover {
+            background: #ff9d00;
+            transform: scale(1.05);
         }
     </style>
 </head>
 <body>
 
-    <div class="stats">
-        <span>Score: <b id="score">0</b></span>
-        <span>Level: <b id="level">1</b></span>
-        <span>Best: <b id="best">0</b></span>
-    </div>
+    <div id="hud">SCORE: <span id="score">0</span> | BEST: <span id="best">0</span></div>
+    
+    <div id="game"></div>
 
-    <div id="game-container">
-        <div id="overlay">
-            <h1 id="menu-title">SNAP TAP</h1>
-            <p id="menu-sub">Test your reaction speed.</p>
-            <button id="start-btn">Start Game</button>
-            <a id="secret-link" href="https://gemini.com" target="_blank" class="hidden" style="color: cyan; margin-top: 20px;">?? SECRET FOUND ??</a>
-        </div>
-    </div>
+    <button id="startBtn">START MISSION</button>
 
     <script>
-        const container = document.getElementById('game-container');
-        const scoreEl = document.getElementById('score');
-        const levelEl = document.getElementById('level');
-        const bestEl = document.getElementById('best');
-        const startBtn = document.getElementById('start-btn');
-        const overlay = document.getElementById('overlay');
-        const secretLink = document.getElementById('secret-link');
+        const game = document.getElementById("game");
+        const scoreEl = document.getElementById("score");
+        const bestEl = document.getElementById("best");
+        const startBtn = document.getElementById("startBtn");
 
         let score = 0;
-        let level = 1;
-        let best = localStorage.getItem('snapBest') || 0;
+        let best = localStorage.getItem("best") || 0;
         let active = false;
-        let spawnTimer;
-
         bestEl.textContent = best;
-
-        function startGame() {
-            score = 0;
-            level = 1;
-            active = true;
-            updateStats();
-            overlay.classList.add('hidden');
-            secretLink.classList.add('hidden');
-            spawn();
-        }
-
-        function updateStats() {
-            scoreEl.textContent = score;
-            levelEl.textContent = level;
-            if (score > best) {
-                best = score;
-                localStorage.setItem('snapBest', best);
-                bestEl.textContent = best;
-            }
-        }
 
         function spawn() {
             if (!active) return;
-            
-            // Clear existing targets
-            container.querySelectorAll('.target').forEach(t => t.remove());
+            game.innerHTML = ""; 
 
-            const target = document.createElement('div');
-            target.className = 'target';
+            const target = document.createElement("div");
+            target.className = "target";
 
             // Difficulty Scaling
-            const size = Math.max(20, 60 - (level * 3));
-            const timeLimit = Math.max(350, 1000 - (level * 70));
+            const size = Math.max(25, 55 - Math.floor(score / 4) * 3);
+            target.style.width = size + "px";
+            target.style.height = size + "px";
 
-            target.style.width = size + 'px';
-            target.style.height = size + 'px';
-            target.style.left = Math.random() * (container.clientWidth - size) + 'px';
-            target.style.top = Math.random() * (container.clientHeight - size) + 'px';
+            const x = Math.random() * (game.clientWidth - size);
+            const y = Math.random() * (game.clientHeight - size);
+            target.style.left = x + "px";
+            target.style.top = y + "px";
 
-            const failTimer = setTimeout(() => {
-                endGame();
-            }, timeLimit);
+            // Timing logic
+            const speed = Math.max(450, 1100 - (score * 25));
+            const timer = setTimeout(() => {
+                if (active) endGame();
+            }, speed);
 
             target.onclick = (e) => {
-                e.stopPropagation();
-                clearTimeout(failTimer);
+                e.stopPropagation(); 
+                clearTimeout(timer);
                 score++;
-                if (score % 5 === 0) level++;
-                updateStats();
-                target.remove();
+                scoreEl.textContent = score;
+                if (score > best) {
+                    best = score;
+                    localStorage.setItem("best", best);
+                    bestEl.textContent = best;
+                }
                 spawn();
             };
 
-            container.appendChild(target);
+            game.appendChild(target);
+        }
+
+        function startGame() {
+            score = 0;
+            scoreEl.textContent = score;
+            active = true;
+            startBtn.style.display = "none";
+            spawn();
         }
 
         function endGame() {
             active = false;
-            container.innerHTML = ''; 
-            container.appendChild(overlay); // Put overlay back
-            
-            container.classList.add('shake');
-            setTimeout(() => container.classList.remove('shake'), 300);
+            game.innerHTML = "";
+            startBtn.style.display = "block";
+            startBtn.textContent = "RETRY";
+            alert("MISSION FAILED! Score: " + score);
 
-            document.getElementById('menu-title').textContent = "GAME OVER";
-            document.getElementById('menu-sub').textContent = `Final Score: ${score}`;
-            startBtn.textContent = "Try Again";
-            overlay.classList.remove('hidden');
-
-            // The 1 in 100^500,000,000 chance logic
-            // In JS, this effectively means "almost never", but here is the trigger:
+            // The nearly impossible Gemini link
             if (Math.random() < Math.pow(0.01, 500000000)) {
-                secretLink.classList.remove('hidden');
+                window.location.href = "https://gemini.com";
             }
         }
 
